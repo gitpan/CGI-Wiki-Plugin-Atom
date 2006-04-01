@@ -1,0 +1,122 @@
+NAME
+      CGI::Wiki::Plugin::Atom - A CGI::Wiki plugin to output RecentChanges RSS.
+
+DESCRIPTION
+    This is an alternative access to the recent changes of a CGI::Wiki wiki.
+    It outputs the Atom Syndication Format as described at
+    <http://www.atomenabled.org/developers/syndication/> .
+    
+    This module is a straight port of CGI::Wiki::Plugin::RSS::ModWiki.
+
+SYNOPSIS
+      use CGI::Wiki;
+      use CGI::Wiki::Plugin::Atom;
+
+      my $wiki = CGI::Wiki->new( ... );  # See perldoc CGI::Wiki
+
+      # Set up the RSS feeder with the mandatory arguments - see C<new> below
+      # for more, optional, arguments.
+      my $atom = CGI::Wiki::Plugin::Atom->new(
+          wiki                 => $wiki,
+          site_name            => "My Wiki",
+          make_node_url        => sub {
+              my ($node_name, $version) = @_;
+              return "http://example.com/wiki.cgi?id="
+                   . uri_escape($node_name)
+                   . ";version=" . uri_escape($version);
+                                      },
+          recent_changes_link  => "http://example.com/?RecentChanges",
+          atom_link => "http://example.com/?action=rc;format=atom",
+      );
+
+      print "Content-type: application/atom+xml\n\n";
+      print $atom->recent_changes;
+
+METHODS
+    new
+          my $atom = CGI::Wiki::Plugin::Atom->new(
+              wiki                 => $wiki,
+              site_name            => "My Wiki",
+              make_node_url        => sub {
+                  my ($node_name, $version) = @_;
+                  return "http://example.com/wiki.cgi?id="
+                       . uri_escape($node_name)
+                       . ";version=" . uri_escape($version);
+                                          },
+              recent_changes_link => "http://example.com/?RecentChanges",
+              atom_link => "http://example.com/?action=rc;format=atom",
+          # Those above were mandatory, those below are optional.
+              site_description     => "My wiki about my stuff",
+          );
+
+        "wiki" must be a CGI::Wiki object. "make_node_url", and
+        "make_diff_url" and "make_history_url", if supplied, must be
+        coderefs.
+
+        NOTE: If you try to put ampersands ("&") in your URLs then XML::RSS
+        will escape them to "&amp;", so use semicolons (";") to separate any
+        CGI parameter pairs instead.
+
+        The mandatory arguments are:
+
+        * wiki
+        * site_name
+        * make_node_url
+        * recent_changes_link
+
+    recent_changes
+          $wiki->write_node( "About This Wiki",
+                             "blah blah blah content",
+                             $checksum,
+                             { comment  => "Stub page, please update!",
+                               username => "Kake"
+                             }
+          );
+
+          print "Content-type: application/atom+xml\n\n";
+          print $atom->recent_changes;
+
+          # Or get something other than the default of the latest 15 changes.
+          print $atom->recent_changes( items => 50 );
+          print $atom->recent_changes( days => 7 );
+
+        Note: Many of the fields emitted by the Atom generator are taken from
+        the node metadata. The form of this metadata is *not* mandated by
+        CGI::Wiki. Your wiki application should make sure to store some or
+        all of the following metadata when calling "write_node":
+
+        comment - a brief comment summarising the edit that has just been
+        made; will be used in the summary for this item. Defaults to
+        'No description given for this change'.
+        username - an identifier for the person who made the edit; will be
+        used as the author for this item. Defaults to 'Anonymous'.
+        host - the hostname or IP address of the computer used to make the
+        edit; if no username is supplied then this will be used as the
+        authtor for this item. If unavailable defaults to 'Anonymous'.
+
+    feed_timestamp
+          print $atom->feed_timestamp();
+                    
+        Returns the timestamp of the feed in POSIX::strftime style ("Tue, 29 
+        Feb 2000 12:34:56 GMT"), which is equivalent to the timestamp of the 
+        most recent item in the feed. Takes the same arguments as 
+        recent_changes(). You will most likely need this to print a 
+        Last-Modified HTTP header so user-agents can determine whether they
+        need to reload the feed or not.
+           
+SEE ALSO
+        * CGI::Wiki
+        * <http://www.atomenabled.org/developers/syndication/>
+
+MAINTAINER
+        Earle Martin <EMARTIN@cpan.org>.
+
+COPYRIGHT AND LICENSE
+        Copyright 2006 Earle Martin.
+
+        This module is free software; you can redistribute it and/or modify
+        it under the same terms as Perl itself.
+
+CREDITS
+        Kake Pugh, for originally writing CGI::Wiki::Plugin::RSS::ModWiki
+        and indeed CGI::Wiki itself.
